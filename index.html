@@ -22,8 +22,8 @@
       }
 
       create () {
-        var titleText = this.add.text(this.scale.width / 4, this.scale.height / 3, 'Hydra Float', { fontSize: '64px'});
-        var continueText = this.add.text(this.scale.width / 2.4, this.scale.height / 2, 'Press to Begin');
+        var titleText = this.add.text(this.scale.width / 3, this.scale.height / 3, 'Hydra Float', { fontSize: '64px'});
+        var continueText = this.add.text(this.scale.width / 2.3, this.scale.height / 2, 'Press to Begin');
         continueText.setInteractive({
           useHandCursor: true
         });
@@ -169,10 +169,10 @@
     window.addEventListener('load', () => {
       // setTimeout to 1 second will prevent a bug if you using a splash screen
       window.setTimeout(() => {
-        // // fix the height to 720
-        // const DEFAULT_HEIGHT = 720
-        // // adjust the width dynamically based on the device screen ratio
-        // const DEFAULT_WIDTH = (window.innerWidth / window.innerHeight) * DEFAULT_HEIGHT
+        // fix the height to 720
+        const DEFAULT_HEIGHT = 600
+        // adjust the width dynamically based on the device screen ratio
+        const DEFAULT_WIDTH = (window.innerWidth / window.innerHeight) * DEFAULT_HEIGHT
 
         const config = {
             type: Phaser.WebGL,
@@ -180,8 +180,10 @@
               mode: Phaser.Scale.FIT,
               autoCenter: Phaser.Scale.CENTER_BOTH
             },
-            width: 800,
-            height: 600,
+            width: DEFAULT_WIDTH,
+            height: DEFAULT_HEIGHT,
+            // width: 800,
+            // height: 600,
             title: 'Hydra Float',
             version: '1',
             physics: {
@@ -193,7 +195,7 @@
             },
             canvas: document.getElementById('hydra-float'),
         };
-        
+
         var game = new Phaser.Game(config)
         game.scene.add('titleScene', titleScene);
         game.scene.add('gameScene', gameScene);
