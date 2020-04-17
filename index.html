@@ -22,6 +22,7 @@
       }
 
       create () {
+        this.scale.lockOrientation('landscape');
         var titleText = this.add.text(this.scale.width / 4, this.scale.height / 3, 'Hydra Float', { fontSize: '64px'});
         var continueText = this.add.text(this.scale.width / 2.4, this.scale.height / 2, 'Press to Begin');
         continueText.setInteractive({
