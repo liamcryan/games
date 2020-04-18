@@ -16,19 +16,70 @@
       return Math.floor(Math.random() * (max - min)) + min;
     }
 
+    class AudioLoop extends Phaser.Scene {
+      constructor () {
+        super({key: 'audioLoop'});
+      }
+      preload () {
+        var progressBar = this.add.graphics();
+        var progressBox = this.add.graphics();
+        var width = this.scale.width;
+        var height = this.scale.height;
+        var loadingText = this.make.text({
+            x: width / 2,
+            y: height / 2 - 50,
+            text: 'Loading...',
+            style: {
+                font: '20px monospace',
+                fill: '#ffffff'
+            }
+        });
+
+        loadingText.setOrigin(0.5, 0.5);
+        progressBox.fillStyle(0x222222, 0.8);
+        progressBox.fillRect(width / 2 - 320/2  , height / 2, 320, 50);
+
+        this.load.audio('music', 'https://liamcryan.github.io/games/audio/DancyChords.wav');
+
+        this.load.on('progress', function (value) {
+          progressBar.clear();
+          progressBar.fillStyle(0xffffff, 1);
+          progressBar.fillRect(width / 2 -320/2 + 10, height / 2 + 10, 300 * value, 30);
+        });
+
+        this.load.on('fileprogress', function (file) {
+        });
+
+        this.load.on('complete', function () {
+          progressBar.destroy();
+          progressBox.destroy();
+          loadingText.destroy()
+        });
+      }
+      create () {
+        var gameMusic = this.sound.add('music');
+        gameMusic.play({loop: true});
+      }
+    }
+
     class TitleScene extends Phaser.Scene {
       constructor () {
         super({key: 'titleScene'});
       }
 
       create () {
-        var titleText = this.add.text(this.scale.width / 3, this.scale.height / 3, 'Hydra Float', { fontSize: '64px'});
-        var continueText = this.add.text(this.scale.width / 2.3, this.scale.height / 2, 'Press to Begin');
-        continueText.setInteractive({
+        var titleText = this.add.text(this.scale.width / 2, this.scale.height / 3, 'Hydra Float', { fontSize: '38px'});
+        var beginText = this.add.text(this.scale.width / 2, this.scale.height / 2, 'Press to Begin');
+        // reposition to center
+        titleText.setPosition((this.scale.width - titleText.width)/ 2, titleText.y);
+        beginText.setPosition((this.scale.width - beginText.width)/2, beginText.y);
+
+        beginText.setInteractive({
           useHandCursor: true
         });
-        continueText.on('pointerdown', function (pointer) {
+        beginText.on('pointerdown', function (pointer) {
           this.scene.switch('gameScene');
+          this.scene.launch('audioLoop');
         }, this);
       }
     }
@@ -54,11 +105,6 @@
         this.splitBubbles = [];
         this.qtyBubblesOut = 0;
         this.color = new Phaser.Display.Color();
-        this.gameMusic;
-      }
-
-      preload () {
-        this.load.audio('music', 'https://liamcryan.github.io/games/audio/DancyChords.wav');
       }
 
       create () {
@@ -76,8 +122,6 @@
         this.gameOverText.on('pointerdown', function (pointer) {
           this.scene.restart();
         }, this);
-        this.gameMusic = this.sound.add('music');
-        this.gameMusic.play({loop: true});
       }
 
       update () {
@@ -145,6 +189,7 @@
 
     var titleScene = new TitleScene();
     var gameScene = new GameScene();
+    var audioLoop = new AudioLoop();
 
     const DEFAULT_HEIGHT = 600
     const DEFAULT_WIDTH = (window.innerWidth / window.innerHeight) * DEFAULT_HEIGHT
@@ -171,8 +216,8 @@
     var game = new Phaser.Game(config);
     game.scene.add('titleScene', titleScene);
     game.scene.add('gameScene', gameScene);
+    game.scene.add('audioLoop', audioLoop);
     game.scene.start('titleScene');
-
 
   </script>
 
