@@ -115,7 +115,9 @@
         this.cycleText = this.add.text(10, 10, 'Cycle: ' + this.cycle);
         this.touchText = this.add.text(10, 30, 'Touches: ' + this.touches);
         this.remainingTouchText = this.add.text(10, 50, 'Remaining: ' + this.remainingTouches);
-        this.gameOverText = this.add.text(this.scale.width / 3.5, this.scale.height / 2, 'Game Over. You missed. Try again.').setVisible(false);
+        this.gameOverText = this.add.text(this.scale.width / 3, this.scale.height / 2, 'Game Over. You missed. Try again.').setVisible(false);
+        // reposition to center
+        this.gameOverText.setPosition((this.scale.width - this.gameOverText.width)/ 2, this.gameOverText.y);
         this.gameOverText.setInteractive({
           useHandCursor: true
         });
