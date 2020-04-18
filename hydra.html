@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Hydra Float</title>
+  <style>* { padding: 0; margin: 0; }</style>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.22.0/dist/phaser.min.js"></script>
+</head>
+<body>
+  <canvas id='hydra-float'></canvas>
+  <script>
+
+    function getRandomInt(min, max) {
+      min = Math.ceil(min);
+      max = Math.floor(max);
+      return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    class AudioLoop extends Phaser.Scene {
+      constructor () {
+        super({key: 'audioLoop'});
+      }
+      preload () {
+        this.load.audio('music', 'https://liamcryan.github.io/games/audio/DancyChords.wav');
+      }
+      create () {
+        var gameMusic = this.sound.add('music');
+        gameMusic.play({loop: true});
+      }
+    }
+
+    class TitleScene extends Phaser.Scene {
+      constructor () {
+        super({key: 'titleScene'});
+      }
+
+      create () {
+        var titleText = this.add.text(this.scale.width / 2, this.scale.height / 3, 'Hydra Float', { fontSize: '38px'});
+        var beginText = this.add.text(this.scale.width / 2, this.scale.height / 2, 'Press to Begin');
+        // reposition to center
+        titleText.setPosition((this.scale.width - titleText.width)/ 2, titleText.y);
+        beginText.setPosition((this.scale.width - beginText.width)/2, beginText.y);
+
+        beginText.setInteractive({
+          useHandCursor: true
+        });
+        beginText.on('pointerdown', function (pointer) {
+          this.scene.switch('gameScene');
+          this.scene.launch('audioLoop');
+        }, this);
+      }
+    }
+
+    class GameScene extends Phaser.Scene {
+      constructor () {
+        super({key: 'gameScene'});
+      }
+
+      init () {
+        this.cycle = 0;
+        this.touches = 0;
+        this.remainingTouches = 1;
+        this.touchText;
+        this.remainingTouchText;
+        this.cycleText;
+        this.gameOverText;
+        this.bubbleCountText;
+        this.bubbleRadius = 25;
+        this.bubbleX;
+        this.bubbleY;
+        this.bubbles = [];
+        this.splitBubbles = [];
+        this.qtyBubblesOut = 0;
+        this.color = new Phaser.Display.Color();
+      }
+
+      create () {
+        this.bubbleX = getRandomInt(this.bubbleRadius, this.scale.width - this.bubbleRadius);
+        this.bubbleY = this.scale.height + this.bubbleRadius;
+        this.color.random();
+        this.bubbles.push([this.makeBubble()]);
+        this.cycleText = this.add.text(10, 10, 'Cycle: ' + this.cycle);
+        this.touchText = this.add.text(10, 30, 'Touches: ' + this.touches);
+        this.remainingTouchText = this.add.text(10, 50, 'Remaining: ' + this.remainingTouches);
+        this.gameOverText = this.add.text(this.scale.width / 3, this.scale.height / 2, 'Game Over. You missed. Try again.').setVisible(false);
+        // reposition to center
+        this.gameOverText.setPosition((this.scale.width - this.gameOverText.width)/ 2, this.gameOverText.y);
+        this.gameOverText.setInteractive({
+          useHandCursor: true
+        });
+        this.gameOverText.on('pointerdown', function (pointer) {
+          this.scene.restart();
+        }, this);
+      }
+
+      update () {
+        if (this.cycle == 0) {
+          this.color.random();
+        }
+
+        for (var i = 0; i < this.bubbles[this.cycle].length; i++) {
+          if (this.bubbles[this.cycle][i].out) {
+            continue;
+          }
+          if (this.bubbles[this.cycle][i].y < -2 * this.bubbleRadius) {
+            this.qtyBubblesOut += 1;
+            this.bubbles[this.cycle][i].out = true;
+            this.bubbles[this.cycle][i].destroy();
+
+            if (this.bubbles[this.cycle][i].touched == true) {
+              for (var i=0; i<2; i++) {
+                this.bubbleX = getRandomInt(this.bubbleRadius, this.scale.width - this.bubbleRadius);
+                this.bubbleY = getRandomInt(this.scale.height + this.bubbleRadius, 1.5 * (this.scale.height + this.bubbleRadius));
+                this.splitBubbles.push(this.makeBubble());
+              }
+            }
+          }
+        }
+
+        if (this.qtyBubblesOut == this.bubbles[this.cycle].length) {
+          if (this.splitBubbles.length != this.qtyBubblesOut * 2) {
+            this.gameOverText.setVisible(true);
+
+          } else {
+            this.bubbles.push(this.splitBubbles);
+            this.cycle += 1;
+            this.touches = 0;
+            this.remainingTouches = this.splitBubbles.length;
+            this.cycleText.setText('Cycle: ' + this.cycle);
+            this.touchText.setText('Touches: ' + this.touches);
+            this.remainingTouchText.setText('Remaining: ' + this.remainingTouches);
+            this.qtyBubblesOut = 0;
+            this.splitBubbles = [];
+            this.color.random();
+          }
+        }
+
+      }
+
+      makeBubble () {
+        var bubble = this.add.circle(this.bubbleX, this.bubbleY, this.bubbleRadius, this.color.color).setInteractive();
+        this.physics.add.existing(bubble);
+        bubble.body.setGravity(0, -1 * getRandomInt(5, 15));  // varying gravity
+        bubble.once('pointermove', function (pointer, localX, localY, event) {
+          bubble.touched = true;
+          this.touches += 1;
+          this.touchText.setText('Touches: ' + this.touches);
+          this.remainingTouches -= 1;
+          this.remainingTouchText.setText('Remaining: ' + this.remainingTouches);
+          bubble.setVisible(false);
+          bubble.setPosition(0, 0);
+        }, this);
+        bubble.touched = false;
+        bubble.out = false;
+        return bubble;
+      }
+    }
+
+    var titleScene = new TitleScene();
+    var gameScene = new GameScene();
+    var audioLoop = new AudioLoop();
+
+    const DEFAULT_HEIGHT = 600
+    const DEFAULT_WIDTH = (window.innerWidth / window.innerHeight) * DEFAULT_HEIGHT
+    var config = {
+        type: Phaser.WebGL,
+        scale: {
+          mode: Phaser.Scale.FIT,
+          autoCenter: Phaser.Scale.CENTER_BOTH,
+          width: DEFAULT_WIDTH,
+          height: DEFAULT_HEIGHT
+        },
+        title: 'Hydra Float',
+        version: '1',
+        physics: {
+          default: 'arcade',
+          arcade: {
+            gravity: { y: -10 },
+            debug: false,
+          }
+        },
+        canvas: document.getElementById('hydra-float'),
+    };
+
+    var game = new Phaser.Game(config);
+    game.scene.add('titleScene', titleScene);
+    game.scene.add('gameScene', gameScene);
+    game.scene.add('audioLoop', audioLoop);
+    game.scene.start('titleScene');
+
+  </script>
+
+</body>
+</html>
