@@ -67,7 +67,12 @@
 
       init () {
         this.splashText;
-        this.splashColor = {};
+        this.splashColor = {
+          name: null,
+          hex: null,
+          index: 0,
+          animation: [],
+        };
         this.splashLetters=[];
         this.bubbles = [];
         this.physics.world.setBounds(0, 0, this.scale.width, this.scale.height, true, true, true, true);
@@ -111,11 +116,8 @@
 
       pickSplashColor () {
         var randomInt = getRandomInt(0, Object.keys(colorHexMap).length);
-        this.splashColor = {
-          name: Object.keys(colorHexMap)[randomInt],
-          hex: colorHexMap[Object.keys(colorHexMap)[randomInt]],
-          index: 0
-        };
+        this.splashColor['name'] = Object.keys(colorHexMap)[randomInt];
+        this.splashColor['hex'] = colorHexMap[Object.keys(colorHexMap)[randomInt]];
       }
 
       addBubble (i) {
@@ -149,13 +151,15 @@
 
         bubble = this.add.circle(x, y, radius, color.color).setInteractive();
         bubble.on('pointerdown', function (pointer, localX, localY, event) {
-          // if the bubble color is the splash color then
-          // fill one of the letters of the splashText
+
           if (bubble.fillColor == Phaser.Display.Color.ValueToColor(this.splashColor['hex']).color) {
-            // change the color of the letter
-            this.splashLetters[this.splashColor['index']].setColor(this.splashColor['hex']);
-            // make the sound and some animation
-            this.splashColor['index'] += 1;
+
+            this.splashColor['animation'].push({
+                initialY: this.splashText.y,
+                minY: this.splashText.y - 100,
+                value: -1,
+                animated: false
+              });
             bubble.destroy();
           } else {
             // play an audio sound indicating wrong color
@@ -191,7 +195,27 @@
         }
       }
       update ()  {
-        if (this.splashColor['index'] == this.splashColor['name'].length) {
+
+        for (var i=0;i< this.splashColor['animation'].length; i++){
+          if (!(this.splashColor['animation'][i]['animated'])) {
+            // animate
+            this.splashLetters[i].setColor(this.splashColor['hex']);
+            if (this.splashLetters[i].y == this.splashColor['animation'][i]['minY']) {
+              this.splashColor['animation'][i]['value'] = 1; // reverse direction
+            }
+            this.splashLetters[i].y += this.splashColor['animation'][i]['value'];
+          }
+
+          if (this.splashLetters[i].y == this.splashColor['animation'][i]['initialY']) {
+            this.splashColor['animation'][i]['animated'] = true;
+            this.splashColor['index'] += 1;
+          }
+
+        }
+
+
+        if (this.splashColor['animation'].length == this.splashColor['name'].length && this.splashColor['animation'][this.splashColor['animation'].length -1]['animated']) {
+          // before you finish, there needs to be some congrats
           this.splashText.destroy();
           for (var i=0; i<this.splashLetters.length; i++){
             this.splashLetters[i].destroy();
@@ -200,8 +224,14 @@
             this.bubbles[i].destroy();
           }
           this.splashLetters=[];
-          this.splashColor = {};
           this.bubbles = [];
+          this.splashColor = {
+            name: null,
+            hex: null,
+            index: 0,
+            animation: [],
+          };
+
           this.create();
         }
       }
