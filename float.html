@@ -165,7 +165,7 @@
         }, this);
         this.physics.add.existing(bubble);
         bubble.body.setCollideWorldBounds();
-        bubble.body.setVelocity(getRandomInt(-15, 15), -1 * getRandomInt(5, 15)).setBounce(1, 1);
+        bubble.body.setVelocity(getRandomInt(-5, 5), -1 * getRandomInt(5, 15)).setBounce(1, 1);
         return bubble;
       }
 
