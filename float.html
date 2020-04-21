@@ -69,11 +69,11 @@
         this.splashText;
         this.splashColor = {};
         this.splashLetters=[];
+        this.bubbles = [];
         this.physics.world.setBounds(0, 0, this.scale.width, this.scale.height, true, true, true, true);
       }
 
       create () {
-        var bubbles = [];
 
         //
         // pick a splash color
@@ -91,13 +91,13 @@
         // colorHexMap not including yellow
 
         for (var i=0;i< 20;i++){
-          bubbles.push(this.addBubble(i));
+          this.bubbles.push(this.addBubble(i));
         }
 
-        for (var i=0;i < bubbles.length;i++){
-          for (var j=0;j<bubbles.length;j++){
+        for (var i=0;i < this.bubbles.length;i++){
+          for (var j=0;j<this.bubbles.length;j++){
             if (j > i){
-              this.physics.add.collider(bubbles[i], bubbles[j]);
+              this.physics.add.collider(this.bubbles[i], this.bubbles[j]);
             }
           }
         }
@@ -195,6 +195,9 @@
           this.splashText.destroy();
           for (var i=0; i<this.splashLetters.length; i++){
             this.splashLetters[i].destroy();
+          }
+          for (var i=0; i<this.bubbles.length; i++){
+            this.bubbles[i].destroy();
           }
           this.splashLetters=[];
           this.splashColor = {};
