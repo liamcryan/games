@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Float</title>
+  <style>* { padding: 0; margin: 0; }</style>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.22.0/dist/phaser.min.js"></script>
+</head>
+<body>
+  <canvas id='float'></canvas>
+  <script>
+
+    var colorHexMap = {
+      red: '#FF0000',
+      yellow: '#FFFF00',
+      blue: '#0000FF',
+      green: '#008000',
+      orange: '#FFA500',
+      purple: '#800080'
+    }
+
+    function getRandomInt(min, max) {
+      min = Math.ceil(min);
+      max = Math.floor(max);
+      return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    class AudioLoop extends Phaser.Scene {
+      constructor () {
+        super({key: 'audioLoop'});
+      }
+      preload () {
+        this.load.audio('music', '/audio/DancyChords.mp3');
+      }
+      create () {
+        var gameMusic = this.sound.add('music');
+        gameMusic.play({loop: true});
+      }
+    }
+
+    class TitleScene extends Phaser.Scene {
+      constructor () {
+        super({key: 'titleScene'});
+      }
+
+      create () {
+        var titleText = this.add.text(this.scale.width / 2, this.scale.height / 3, 'Float', { fontSize: '38px'});
+        var beginText = this.add.text(this.scale.width / 2, this.scale.height / 2, 'Press to Begin');
+        // reposition to center
+        titleText.setPosition((this.scale.width - titleText.width)/ 2, titleText.y);
+        beginText.setPosition((this.scale.width - beginText.width)/2, beginText.y);
+
+        beginText.setInteractive({
+          useHandCursor: true
+        });
+        beginText.on('pointerdown', function (pointer, localX, localY, event) {
+          this.scene.switch('gameScene');
+          this.scene.launch('audioLoop');
+        }, this);
+      }
+    }
+
+    class GameScene extends Phaser.Scene {
+      constructor () {
+        super({key: 'gameScene'});
+      }
+
+      init () {
+        this.splashText;
+        this.splashColor = {};
+        this.splashLetters=[];
+        this.physics.world.setBounds(0, 0, this.scale.width, this.scale.height, true, true, true, true);
+      }
+
+      create () {
+        var bubbles = [];
+
+        //
+        // pick a splash color
+        //
+        this.pickSplashColor();
+
+        //
+        // floating bubbles
+        //
+
+        // there should be a diverse amount of balls
+        // if the text is 'yellow', there should be exaclty 6 yellow balls
+        // with a max amount of balls equal to 20
+        // this means the remaining 14 will be chosen randomly from
+        // colorHexMap not including yellow
+
+        for (var i=0;i< 20;i++){
+          bubbles.push(this.addBubble(i));
+        }
+
+        for (var i=0;i < bubbles.length;i++){
+          for (var j=0;j<bubbles.length;j++){
+            if (j > i){
+              this.physics.add.collider(bubbles[i], bubbles[j]);
+            }
+          }
+        }
+
+        //
+        // add the splash text
+        //
+        this.addSplashText()
+
+      }
+
+      pickSplashColor () {
+        var randomInt = getRandomInt(0, Object.keys(colorHexMap).length);
+        this.splashColor = {
+          name: Object.keys(colorHexMap)[randomInt],
+          hex: colorHexMap[Object.keys(colorHexMap)[randomInt]],
+          index: 0
+        };
+      }
+
+      addBubble (i) {
+        var radius = 15;
+        var x = getRandomInt(radius, this.scale.width - radius);
+        var y = getRandomInt(radius, this.scale.height - radius);
+        var randomInt;
+        var randomColor;
+        var colorHexExcludeSplashMap = {};
+        var color;
+        var bubble;
+
+        if (i < this.splashColor['name'].length) {
+          randomColor = this.splashColor;
+        } else {
+          // randomly choose one of the colors in colorHexMap
+          // but make sure the color is not the splashColor
+          for (var key in colorHexMap) {
+            if (key != this.splashColor['name']) {
+              colorHexExcludeSplashMap[key] = colorHexMap[key];
+            }
+          }
+          randomInt = getRandomInt(0, Object.keys(colorHexMap).length - 1);
+          randomColor = {
+            name: Object.keys(colorHexExcludeSplashMap)[randomInt],
+            hex: colorHexExcludeSplashMap[Object.keys(colorHexExcludeSplashMap)[randomInt]]
+          };
+        }
+
+        color = Phaser.Display.Color.ValueToColor(randomColor['hex']);
+
+        bubble = this.add.circle(x, y, radius, color.color).setInteractive();
+        bubble.on('pointerdown', function (pointer, localX, localY, event) {
+          // if the bubble color is the splash color then
+          // fill one of the letters of the splashText
+          if (bubble.fillColor == Phaser.Display.Color.ValueToColor(this.splashColor['hex']).color) {
+            // change the color of the letter
+            this.splashLetters[this.splashColor['index']].setColor(this.splashColor['hex']);
+            // make the sound and some animation
+            this.splashColor['index'] += 1;
+            bubble.destroy();
+          } else {
+            // play an audio sound indicating wrong color
+            // and make the bubble wiggle or something
+          }
+
+        }, this);
+        this.physics.add.existing(bubble);
+        bubble.body.setCollideWorldBounds();
+        bubble.body.setVelocity(getRandomInt(-100, 100), -1 * getRandomInt(25, 35)).setBounce(1, 1);
+        return bubble;
+      }
+
+      addSplashText () {
+        var style = {fontSize: '64px'};
+
+        //
+        // add the splash text
+        //
+        // this is only to get the text width
+        this.splashText = this.add.text(0, 0, this.splashColor['name'], style).setVisible(false);
+        // reposition to center x & center y
+        var textWidth = this.splashText.width;
+        this.splashText.setPosition(
+          (this.scale.width - this.splashText.width)/2,
+          (this.scale.height - this.splashText.height)/2
+        );
+
+        // determine width of each letter so we can style each individually
+        var lettersWidth = this.splashText.width / this.splashColor['name'].length;
+        for (var i=0; i<this.splashColor['name'].length; i++){
+          this.splashLetters.push(this.add.text(this.splashText.x + i*lettersWidth, this.splashText.y, this.splashColor['name'][i], style));
+        }
+      }
+      update ()  {
+        if (this.splashColor['index'] == this.splashColor['name'].length) {
+          this.splashText.destroy();
+          for (var i=0; i<this.splashLetters.length; i++){
+            this.splashLetters[i].destroy();
+          }
+          this.splashLetters=[];
+          this.splashColor = {};
+          this.create();
+        }
+      }
+    }
+
+    var titleScene = new TitleScene();
+    var gameScene = new GameScene();
+    var audioLoop = new AudioLoop();
+
+    const DEFAULT_HEIGHT = 600
+    const DEFAULT_WIDTH = (window.innerWidth / window.innerHeight) * DEFAULT_HEIGHT
+    var config = {
+        type: Phaser.WebGL,
+        scale: {
+          mode: Phaser.Scale.FIT,
+          autoCenter: Phaser.Scale.CENTER_BOTH,
+          width: DEFAULT_WIDTH,
+          height: DEFAULT_HEIGHT
+        },
+        title: 'Float',
+        version: '1',
+        physics: {
+          default: 'arcade',
+          arcade: {
+            gravity: { y: 0 },
+            debug: false,
+          }
+        },
+        canvas: document.getElementById('float'),
+    };
+
+    var game = new Phaser.Game(config);
+    game.scene.add('titleScene', titleScene);
+    game.scene.add('gameScene', gameScene);
+    game.scene.add('audioLoop', audioLoop);
+    game.scene.start('titleScene');
+
+  </script>
+
+</body>
+</html>
