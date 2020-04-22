@@ -19,6 +19,14 @@
       purple: '#800080'
     }
 
+    var gameConfig = {
+      radius: 25,
+      letters: {minYDelta: -100, valueDelta: -1},
+      bubble: {radius: 25, velocityXMin: -5, velocityXMax: 5, velocityYMin: -15, velocityYMax: -5, bounceX: 1, bounceY: 1},
+      bubbles: {maxCount: 15}
+    };
+
+
     function getRandomInt(min, max) {
       min = Math.ceil(min);
       max = Math.floor(max);
@@ -70,33 +78,75 @@
         this.splashColor = {
           name: null,
           hex: null,
-          index: 0,
           animation: [],
         };
         this.splashLetters=[];
         this.bubbles = [];
         this.physics.world.setBounds(0, 0, this.scale.width, this.scale.height, true, true, true, true);
+        this.activeColorHexMap = {};
+        for (var key in colorHexMap) {
+          this.activeColorHexMap[key] = colorHexMap[key];
+         }
       }
 
+
       create () {
+
+        var maxBubbleCount;
+        var x;
+        var y;
+        var coordinatesXY = [];
+        var radius = gameConfig['bubble']['radius'];
+        var overlapping;
 
         //
         // pick a splash color
         //
+        if (Object.keys(this.activeColorHexMap).length == 0) {
+          console.log('congratulations! you have gone through all of the colors');
+          // reset the activeColorHexMap (reset the game)
+          for (var key in colorHexMap) {
+            this.activeColorHexMap[key] = colorHexMap[key];
+           }
+        }
         this.pickSplashColor();
 
         //
         // floating bubbles
         //
 
-        // there should be a diverse amount of balls
-        // if the text is 'yellow', there should be exaclty 6 yellow balls
-        // with a max amount of balls equal to 20
-        // this means the remaining 14 will be chosen randomly from
-        // colorHexMap not including yellow
+        maxBubbleCount = Math.min(
+          gameConfig['bubbles']['maxCount'],
+          this.splashColor['name'].length * Object.keys(colorHexMap).length
+        );
 
-        for (var i=0;i< 20;i++){
-          this.bubbles.push(this.addBubble(i));
+        // get the coordinates of the bubbles, make sure they aren't overlapping
+        for (var i=0; i<maxBubbleCount; i++){
+          x = getRandomInt(radius, this.scale.width - radius);
+          y = getRandomInt(radius, this.scale.height - radius);
+          if (coordinatesXY.length == 0) {
+            coordinatesXY.push({x: x, y: y});
+            continue;
+          }
+          overlapping = false;
+          for (var j=0; j<coordinatesXY.length; j++) {
+            if (x - 2 * radius <= coordinatesXY[j]['x']  && coordinatesXY[j]['x'] <= x + 2 * radius && y - 2 * radius <= coordinatesXY[j]['y'] && coordinatesXY[j]['y']<= y + 2 * radius) {
+              i -= 1; // try again for a non-overlapping coordinate
+              overlapping = true;
+              break;
+            }
+          }
+          if (overlapping) {
+            continue;
+          }
+          coordinatesXY.push({x: x, y: y});
+
+        }
+
+        // then loop through again and add the bubbles at their coordinates
+
+        for (var i=0;i<maxBubbleCount;i++){
+          this.bubbles.push(this.addBubble(i, coordinatesXY[i]['x'], coordinatesXY[i]['y']));
         }
 
         for (var i=0;i < this.bubbles.length;i++){
@@ -115,22 +165,22 @@
       }
 
       pickSplashColor () {
-        var randomInt = getRandomInt(0, Object.keys(colorHexMap).length);
-        this.splashColor['name'] = Object.keys(colorHexMap)[randomInt];
-        this.splashColor['hex'] = colorHexMap[Object.keys(colorHexMap)[randomInt]];
+        var randomInt = getRandomInt(0, Object.keys(this.activeColorHexMap).length);
+        this.splashColor['name'] = Object.keys(this.activeColorHexMap)[randomInt];
+        this.splashColor['hex'] = this.activeColorHexMap[Object.keys(this.activeColorHexMap)[randomInt]];
       }
 
-      addBubble (i) {
-        var radius = 15;
-        var x = getRandomInt(radius, this.scale.width - radius);
-        var y = getRandomInt(radius, this.scale.height - radius);
+      addBubble (index, coordindateX, coordindateY) {
+
+        // var x = getRandomInt(gameConfig['bubble']['radius'], this.scale.width - gameConfig['bubble']['radius']);
+        // var y = getRandomInt(gameConfig['bubble']['radius'], this.scale.height - gameConfig['bubble']['radius']);
         var randomInt;
         var randomColor;
         var colorHexExcludeSplashMap = {};
         var color;
         var bubble;
 
-        if (i < this.splashColor['name'].length) {
+        if (index < this.splashColor['name'].length) { // 'green' will have 5 green balls
           randomColor = this.splashColor;
         } else {
           // randomly choose one of the colors in colorHexMap
@@ -149,27 +199,35 @@
 
         color = Phaser.Display.Color.ValueToColor(randomColor['hex']);
 
-        bubble = this.add.circle(x, y, radius, color.color).setInteractive();
+        bubble = this.add.circle(coordindateX, coordindateY, gameConfig['bubble']['radius'], color.color);
+        bubble.setInteractive();
         bubble.on('pointerdown', function (pointer, localX, localY, event) {
 
           if (bubble.fillColor == Phaser.Display.Color.ValueToColor(this.splashColor['hex']).color) {
-
-            this.splashColor['animation'].push({
-                initialY: this.splashText.y,
-                minY: this.splashText.y - 100,
-                value: -1,
-                animated: false
-              });
+            if (this.splashColor['animation'].length < this.splashColor['name'].length) {
+              this.splashColor['animation'].push({
+                  initialY: this.splashText.y,
+                  minY: this.splashText.y + gameConfig['letters']['minYDelta'],
+                  value: gameConfig['letters']['valueDelta'],
+                  animated: false
+                });
+            }
             bubble.destroy();
+
           } else {
             // play an audio sound indicating wrong color
             // and make the bubble wiggle or something
+            // change the color of the bubble to the splashColor
+            bubble.fillColor = Phaser.Display.Color.ValueToColor(this.splashColor['hex']).color;
           }
 
         }, this);
         this.physics.add.existing(bubble);
         bubble.body.setCollideWorldBounds();
-        bubble.body.setVelocity(getRandomInt(-5, 5), -1 * getRandomInt(5, 15)).setBounce(1, 1);
+        bubble.body.setVelocity(
+          getRandomInt(gameConfig['bubble']['velocityXMin'], gameConfig['bubble']['velocityXMax']),
+          getRandomInt(gameConfig['bubble']['velocityYMin'], gameConfig['bubble']['velocityYMax'])).setBounce(
+            gameConfig['bubble']['bounceX'], gameConfig['bubble']['bounceY']);
         return bubble;
       }
 
@@ -196,7 +254,7 @@
       }
       update ()  {
 
-        for (var i=0;i< this.splashColor['animation'].length; i++){
+        for (var i=0; i<this.splashColor['animation'].length; i++){
           if (!(this.splashColor['animation'][i]['animated'])) {
             // animate
             this.splashLetters[i].setColor(this.splashColor['hex']);
@@ -213,7 +271,6 @@
 
         }
 
-
         if (this.splashColor['animation'].length == this.splashColor['name'].length && this.splashColor['animation'][this.splashColor['animation'].length -1]['animated']) {
           // before you finish, there needs to be some congrats
           this.splashText.destroy();
@@ -225,6 +282,7 @@
           }
           this.splashLetters=[];
           this.bubbles = [];
+          delete this.activeColorHexMap[this.splashColor['name']];
           this.splashColor = {
             name: null,
             hex: null,
