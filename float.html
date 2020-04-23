@@ -26,7 +26,7 @@
       bubbles: {maxCount: 15}
     };
     var titleConfig = {
-      bubble: {radius: 15},
+      bubble: {radius: 15, angleDelta: .01, length: 80},
     };
 
 
@@ -55,14 +55,14 @@
       }
       init () {
         this.bubbles = [];
-        this.length = 80;
-        this.angleDelta = .01;
+        this.length = titleConfig['bubble']['length'];
+        this.angleDelta = titleConfig['bubble']['angleDelta'];
         this.titleColors = {
           red: {hex: Phaser.Display.Color.ValueToColor(colorHexMap['red']), angle: 0},
-          yellow: {hex: Phaser.Display.Color.ValueToColor(colorHexMap['yellow']), angle: 2*Math.PI/6},
-          blue: {hex: Phaser.Display.Color.ValueToColor(colorHexMap['blue']), angle: 2*2*Math.PI/6},
+          orange: {hex: Phaser.Display.Color.ValueToColor(colorHexMap['orange']), angle: 2*Math.PI/6},
+          yellow: {hex: Phaser.Display.Color.ValueToColor(colorHexMap['yellow']), angle: 2*2*Math.PI/6},
           green: {hex: Phaser.Display.Color.ValueToColor(colorHexMap['green']), angle: 2*3*Math.PI/6},
-          orange: {hex: Phaser.Display.Color.ValueToColor(colorHexMap['orange']), angle: 2*4*Math.PI/6},
+          blue: {hex: Phaser.Display.Color.ValueToColor(colorHexMap['blue']), angle: 2*4*Math.PI/6},
           purple: {hex: Phaser.Display.Color.ValueToColor(colorHexMap['purple']), angle: 2*5*Math.PI/6},
         }
       }
