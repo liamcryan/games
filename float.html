@@ -245,14 +245,6 @@
         bubble.on('pointerdown', function (pointer, localX, localY, event) {
 
           if (bubble.fillColor == Phaser.Display.Color.ValueToColor(this.splashColor['hex']).color) {
-            // if (this.splashColor['animation'].length < this.splashColor['name'].length) {
-            //   this.splashColor['animation'].push({
-            //       initialY: this.splashText.y,
-            //       minY: this.splashText.y + gameConfig['letters']['minYDelta'],
-            //       value: gameConfig['letters']['valueDelta'],
-            //       lettersAnimated: false
-            //     });
-            // }
             bubble.destroy();
 
           } else {
@@ -302,6 +294,7 @@
       }
 
       update ()  {
+        var bubblesColorChanged = true;
         var bubblesDestroyed = true;
         var lettersAnimated = true;
 
@@ -311,12 +304,19 @@
             break;
           }
         }
-
+        for (var i=0; i< this.bubbles.length; i++) {
+          if (this.bubbles[i].fillColor != Phaser.Display.Color.ValueToColor(this.splashColor['hex']).color) {
+            bubblesColorChanged = false;
+            break;
+          }
+        }
         //
         // animation
         //
         if (bubblesDestroyed) {
+
           for (var i=0; i<this.splashColor['animation'].length; i++){
+
             if (i != 0) { // this animates the letters one at a time
               if (!this.splashColor['animation'][i-1]['lettersAnimated']) {
                 break;
@@ -390,7 +390,7 @@
           height: DEFAULT_HEIGHT
         },
         title: 'Float',
-        version: '1',
+        version: '1.0.0',
         physics: {
           default: 'arcade',
           arcade: {
